@@ -3,7 +3,7 @@
 #include <GL/glu.h>
 #include <GL/glut.h>
 #include <stdlib.h>
-#include <math.h>
+#include <gmp.h>
 
 const double ZOOM_FACTOR = 1.1;
 const int SCREEN_WIDTH = 1920, SCREEN_HEIGHT = 1080;
@@ -20,7 +20,8 @@ const double COLOR_PALETTE[6][3] = {
 int max_iter = 128;
 // double scale = INIT_SCALE;
 // double o_x = -scale*SCREEN_WIDTH/2, o_y = -scale*SCREEN_HEIGHT/2;
-double scale=1.247200e-04, o_x=1.677900e-01, o_y=-6.519759e-01;
+// double scale=1.247200e-04, o_x=1.677900e-01, o_y=-6.519759e-01;
+mpf_t scale, o_x, o_y;
 // GLubyte bitmap[SCREEN_WIDTH * SCREEN_HEIGHT / 8];
 float bitmap[SCREEN_HEIGHT][SCREEN_WIDTH][3];
 
@@ -73,6 +74,34 @@ void paint(double c_x, double c_y, float &r, float &g, float &b){
 		b = COLOR_PALETTE[(c_i+1)%6][2] * fmod(i_cont, 1) + COLOR_PALETTE[c_i][2] * (1. - fmod(i_cont, 1));
 	}
 }
+
+void paint(double c_x, double c_y, float &r, float &g, float &b){
+	bool escaped = false;
+	int i = 0;
+	double x2 = 0., y2 = 0., x = 0., y=0.;
+	while(!escaped and i<max_iter){
+		escaped = escaped or (x2 + y2 > 4);
+		i++;
+		y = (x+x)*y + c_y;
+		x = x2 - y2 + c_x;
+		x2 = x*x;
+		y2 = y*y;
+	}
+	if(!escaped){
+		r = 0.; g = 0.; b = 0.;
+	}
+	else{
+		float i_cont = log(log(x2 + y2) / 2 / log(2)) / log(2);
+		// float v = ((i < max_iter ? ((float) i)+1-nu : ((float) i)) / max_iter) * 0.9 + (((float) x2+y2) / 10) * 0.1;
+		// r = v; g = v; b = 0.;
+		i_cont = (i < max_iter ? ((double) i)+1-i_cont : ((double) i));
+		int c_i = ((int) floor(i_cont)) % 6;
+		r = COLOR_PALETTE[(c_i+1)%6][0] * fmod(i_cont, 1) + COLOR_PALETTE[c_i][0] * (1. - fmod(i_cont, 1));
+		g = COLOR_PALETTE[(c_i+1)%6][1] * fmod(i_cont, 1) + COLOR_PALETTE[c_i][1] * (1. - fmod(i_cont, 1));
+		b = COLOR_PALETTE[(c_i+1)%6][2] * fmod(i_cont, 1) + COLOR_PALETTE[c_i][2] * (1. - fmod(i_cont, 1));
+	}
+}
+
 
 void display(void)
 {
